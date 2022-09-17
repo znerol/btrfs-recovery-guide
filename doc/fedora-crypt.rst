@@ -18,23 +18,28 @@ Do not reboot after the installation finished.
 Step 2: Mount the toplevel btrfs volume
 =======================================
 
-During installation, a new `btrfs` filesystem was created by the installer.
+During installation, a new ``btrfs`` filesystem was created by the installer.
 It is necessary to mount the toplevel volume of this filesystem in order to
-replace the `root` and `home` subvolumes in a later step.
+replace the ``root`` and ``home`` subvolumes in a later step.
 
 Open a terminal window and become root::
 
   $ sudo -i
 
-Note: Since this is still the installer environment, `sudo` shouldn't ask for a
-password.
+.. note::
+
+  Since this is still the installer environment, ``sudo`` shouldn't ask for a
+  password.
 
 Figure out where the new system was installed into::
 
   # mount | grep 'on /mnt/sysroot type btrfs'
   /dev/mapper/luks-ea656713-63b6-407e-b13b-a2edea855999 on /mnt/sysroot type btrfs (rw,relatime,seclabel,compress=zstd:1,space_cache=v2,subvolid=257,subvol=/root)
 
-Note: The device path should start with ``/dev/maper/luks-`` and end with an UUID.
+.. note::
+
+  The device path should start with ``/dev/mapper/luks-`` and end with an
+  UUID. Substitute this path with the correct one in subsequent commands.
 
 Create a mount point directory and mount the toplevel subvolume::
 
@@ -54,13 +59,16 @@ Attach the backup disk, unlock it (using the passphrase of the backup disk) and
 mount it using the file manager app.
 
 Figure out the backup mount point. Attached disks are mounted somewhere under
-`/run/media/liveuser/...`::
+``/run/media/liveuser/...``::
 
   # mount | grep 'on /run/media/liveuser/[^/]* type btrfs'
   /dev/mapper/luks-7977ef3a-1bce-4ea5-b776-f9daf44b52f6 on /run/media/liveuser/Backup type btrfs (rw,nosuid,nodev,relatime,seclabel,space_cache=v2,subvolid=5,subvol=/,uhelper=udisks2)
 
-Note the backup mount point (in this case ``/run/media/liveuser/Backup``).
-Substitute this path with the correct in the following commands.
+.. note::
+
+  Take note of the backup mount point (in this case
+  ``/run/media/liveuser/Backup``). Substitute this path with the correct one
+  in subsequent commands.
 
 List available snapshots in the backup::
 
@@ -85,7 +93,7 @@ Confirm that the backups have been transferred to the toplevel volume::
   ID 258 gen 44 top level 5 path ROOT.20220916T1320
   ID 259 gen 48 top level 5 path home.20220916T1320
 
-Move newly instaled system out of the way::
+Move newly installed system out of the way::
 
   # mv /mnt/toplevel/root /mnt/toplevel/root.away
   # mv /mnt/toplevel/home /mnt/toplevel/home.away
@@ -97,3 +105,26 @@ Create writable subvolumes from the restored snapshots::
   # btrfs subvolume snapshot /mnt/toplevel/home.20220916T1320 /mnt/toplevel/home
   Create a snapshot of '/mnt/toplevel/home.20220916T1320' in '/mnt/toplevel/home'
 
+
+Step 4: Fix UUIDs in fstab, crypttab and grub config
+====================================================
+
+Since the new system resides on a freshly formatted disk, some filesystem
+related UUIDs in restored configuration files need to be adapted. A very quick
+approach is to simply copy the relevant configuration files from the newly
+installed system to the restored one.
+
+Copy ``/etc/fstab`` from the newly installed system to the restored one::
+
+  # cp /mnt/toplevel/root.away/etc/fstab /mnt/toplevel/root/etc/fstab
+
+Copy ``/etc/crypttab`` from the newly installed system to the restored one::
+
+  # cp /mnt/toplevel/root.away/etc/crypttab /mnt/toplevel/root/etc/crypttab
+
+Copy ``/etc/sysconfig/grub`` from the newly installed system to the restored one::
+
+  # cp /mnt/toplevel/root.away/etc/sysconfig/grub /mnt/toplevel/root/etc/sysconfig/grub
+
+
+After that, reboot the system and remove the installer media.
